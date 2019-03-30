@@ -17,6 +17,8 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <string.h>
+#include <errno.h>
+#include <sys/time.h>
 
 
 extern int obtain_order();		/* See parser.y for description */
@@ -57,7 +59,34 @@ int main(void)
 		
 		/* Parseamos la entrada... */
 		ret = obtain_order(&argvv, filev, &bg);
+
+		/*size_t n_mandatos = sizeof(argvv)/sizeof(argvv[0]);
+		printf("\nn_mandatos = %lu\n", n_mandatos);
+		printf("Primer primer flag de primer mandato = %s\n", argvv[0][1]);*/
+
+
+		//size_t size_caracter = sizeof(argvv[0][0][0]);
+		//printf("Tamaño de caracter = %lu\n", size_caracter);
+
+		//size_t size_palabra = sizeof(argvv[0][0])/size_caracter;
+		//printf("Tamaño de palabra = %lu\n", size_palabra);
+
+		//size_t size_mandato = sizeof(argvv[0])/size_palabra;
+		//printf("Tamaño de mandato = %lu\n", size_mandato);
+
+		//size_t size_entrada = sizeof(argvv)/size_mandato;
+		//printf("Tamaño de entrada = %lu\n", size_entrada);
+		//printf("Tamaño de entrada predefinida = %d\n", argvc);
+
+
+		//printf("Tamaño de todo = %lu\n", sizeof(argvv));
+		//printf("Tamaño de mandato = %lu\n", sizeof(argvv[0]));
+		//printf("Tamaño de palabra = %lu\n", sizeof(argvv[0][1]));
 		
+		/*size_t n_palabras = sizeof(argvv[0])/sizeof(argvv[0][0]);
+		printf("\n_palabras = %lu\n", n_palabras);
+		printf("Primer mandato = %s\n", argvv[0][1]);*/
+
 		/* Tratamiento de las SEÑALES */
 		/* En background las señales se ignoran... */
 		if (bg)
@@ -134,8 +163,7 @@ int main(void)
 		/* Creamos tantos procesos como comandos a ejecutar */
 		for (i = 0; i < argvc; i++)
 		{						
-			/* Creamos el PIPE correspondiente... si procede */	/* TODO */				
-						
+			/* Creamos el PIPE correspondiente... si procede */	/* TODO */										
 			/* Si somos un proceso par y quedan mas procesos por crear */
 			if ((i < (argvc - 1)) && (i % 2 == 0))
 			{
@@ -143,12 +171,10 @@ int main(void)
 				{
 					printf("Error al crear el pipe1\n");
 				}
-			}
-			
+			}			
 			/* Si somos un proceso impar y quedan mas procesos por crear */
 			if ((i < (argvc - 1)) && (i % 2 == 1))
 			{
-				
 				while (pipe(pipe2) == -1)
 				{
 					printf("Error al crear el pipe2\n");
@@ -158,29 +184,40 @@ int main(void)
 			/* Comprobamos si tenemos que ejecutar un MANDATO INTERNO */
 
 			/* Si es mytime, no es en BG y es el último */
-			if (((strcmp(argvv[i][0], "mytime") == 0) && (!bg) && (argvc > 1) && (i == argvc - 1)) ||
-					((argvc == 1) && (strcmp(argvv[i][0], "mytime") == 0) && (!bg)))
-			{								
-					/* Si hay que direccionar la salida */	
-					if (filev[1] != NULL)
-					{
-						outPadre = dup(STDOUT_FILENO);
-						close(STDOUT_FILENO);
-						dup(fdOut);
-						close(fdOut);						
-					}
+			if ((strcmp(argvv[i][0], "mytime") == 0)){
+				if (((!bg) && (argvc == 2) && (i == argvc - 1)) ||
+						((argvc == 1) && (strcmp(argvv[i][0], "mytime") == 0) && (!bg)))
+				{								
+						/* Si hay que direccionar la salida */	
+						if (filev[1] != NULL)
+						{
+							outPadre = dup(STDOUT_FILENO);
+							close(STDOUT_FILENO);
+							dup(fdOut);
+							close(fdOut);						
+						}
 
-					/* Ejecutamos... */
-					mytime(argvv[i]);
+						/* Ejecutamos mytime */
+						if (mytime(argvv[i]) == -1)
+						{
+							continue;
+						}
+						
 
-					/* Dejamos la salida como antes... */
-					if (filev[1] != NULL)
-					{
-						close(STDOUT_FILENO);
-						dup(outPadre);
-					}
-					
+						/* Dejamos la salida como antes... */
+						if (filev[1] != NULL)
+						{
+							close(STDOUT_FILENO);
+							dup(outPadre);
+						}
+						
+						continue;
+				} else
+				{
+					printf("Con mytime sólo se puede introducir un mandato");
 					continue;
+				}
+				
 			}
 
 		   /* Si es mypwd, no es en BG y es el �ltimo */
@@ -219,20 +256,19 @@ int main(void)
 				break;
 			} else if (pid == 0)
 			{
-				/* Si soy el proceso hijo */			
-				
+				/* Si soy el proceso hijo */							
 				/* PRIMER MANDATO */
 				if (i == 0)
 				{			
 					/* Tiene que leer del fichero de entrada */
 					if (filev[0] != NULL)
 					{
-						close(STDIN_FILENO);	// Cerramos IN est�ndar
-						dup(fdIn);				// Fichero -> IN est�ndar
+						close(STDIN_FILENO);	// Cerramos IN estándar
+						dup(fdIn);				// Fichero -> IN estándar
 						close(fdIn);			// Cerramos fichero
 					}					
 					
-					/* Si es el �nico mandato */
+					/* Si es el único mandato */
 					if (argvc == 1)
 					{
 						/* Tiene que leer del fichero de salida */
@@ -253,16 +289,16 @@ int main(void)
 					} else if (argvc > 1)
 					{
 						/* Al menos hay 2 mandatos, redireccionamos pipes ... */
-						close(STDOUT_FILENO);	// Cerramos OUT est�ndar
+						close(STDOUT_FILENO);	// Cerramos OUT estándar
 						close(pipe1[0]);		// Cerramos pipe1[RD]
-						dup(pipe1[1]);			// pipe1[WR] -> OUT est�ndar
+						dup(pipe1[1]);			// pipe1[WR] -> OUT estándar
 						close(pipe1[1]);		// Cerramos pipe1[WR]						
 					}
 					/* Primer mandato */	
 				} else if ((i == (argvc - 1)) && (i != 0))
 				{
 					/* ÚLTIMO MANDATO */
-					/* Tiene que leer del fichero de salida */
+					/* Tiene que escribir al fichero de salida */
 					if (filev[1] != NULL)
 					{					
 						close(STDOUT_FILENO);
@@ -399,11 +435,134 @@ int main(void)
 
 int mytime(char **mandato)
 {	
+
+		/* size_t size_caracter = sizeof(mandato[0][0][0]);
+		printf("Tamaño de caracter = %lu\n", size_caracter);
+
+		size_t size_palabra = sizeof(argvv[0][0])/size_caracter;
+		printf("Tamaño de palabra = %lu\n", size_palabra);
+
+		size_t size_mandato = sizeof(argvv[0])/size_palabra;
+		printf("Tamaño de mandato = %lu\n", size_mandato);
+
+		size_t size_entrada = sizeof(argvv)/size_mandato;
+		printf("Tamaño de entrada = %lu\n", size_entrada);
+		printf("Tamaño de entrada predefinida = %d\n", argvc); */
+
+	//char *comando = mandato[0];
+	//size_t n_palabras = sizeof(mandato)/sizeof(mandato[0]);
+	//char **flags[mandato.]
+	//printf("\n%lu\n", n_palabras);
+	
+	printf("Tamaño mandato = %lu\n", sizeof(mandato));
+
+	int n_palabras = 0;
+	//char *comando = NULL;
+	//char *flags[6];
+
+	char *argumentos[7];
+
+	int mandato_size = sizeof(mandato);
+
+	/* Recorremos todas las palabras del mandato */
+	for (int j = 0; j < mandato_size; ++j)
+	{
+		//printf("Palabra del mandato = %s\n", mandato[j]);
+		/* Si es la segunda, es el comando del proceso hijo */
+/* 		if (j == 1)
+		{
+			comando = mandato[j];
+			printf("Guardando '%s' como comando\n", comando);
+		}
+		 */
+		/* De la segunda para adelante,son los flags */
+		/* if (j > 1) { */
+		char *palabra = mandato[j];
+
+		argumentos[j - 1] = palabra;
+		//strcpy(flags[j - 2], mandato[j]);
+		printf("Guardando '%s' como argumento\n", argumentos[j - 1]);
+
+		/* Si es NULL, deja de contar y almacenar las palabras del mandato */
+		if (palabra == NULL)
+		{
+			printf("Numero de palabras = %d\n", n_palabras);
+			printf("FIN DE MANDATO\n");
+			break;
+		} 
+
+	/* 	} */
+
+		++n_palabras;	
+	}
+
+	/* Creamos un nuevo proceso... */
+	int pid = fork(); 
+	int status;
+
+	switch(pid) {
+		case -1: /* error */
+			perror("Error en el fork");
+			return -1;
+
+		case 0: /* hijo */
+			struct timeval tv;
+			gettimeofday(&tv, NULL);
+			double t_inicio = tv.tv_sec;
+
+			if (execvp(argumentos[0], argumentos) < 0) {
+				int errnum = errno;
+				fprintf(stderr, "Error opening file: %s\n", strerror( errnum ));
+				//printf("Error en el exec. Si todo ha ido bien esto nunca debería ejecutarse.\nError: %s\n", strerror(errno)); 
+				return -1;
+			}
+
+			gettimeofday(&tv, NULL);
+			double t_fin = tv.tv_sec;
+			double t_ejec = t_fin - t_inicio;
+			printf("“​Time spent: %f secs.\n​", t_ejec);
+			break;
+
+		default: /* padre */
+			printf("Soy el proceso padre\n");
+			while (wait(&status) != pid){
+				if (status == 0)
+				{
+					printf("Ejecución normal del hijo\n");
+				} else 
+				{
+					printf("Ejecución anormal del hijo \n");
+					perror("Error en el wait");
+					printf("Fin del proceso PADRE\n");
+					return -1;
+				}
+			}
+	}
+			
+
+/* 	printf("Mandato entero = %s\n", mandato[1]);
+	size_t n_chars = sizeof(mandato[0][0]);
+	printf("Tamaño chars mandato = %lu\n", n_chars); */
+	//printf("llego\n");
+	//printf("tamaño mandato = %lu", sizeof(mandato));
+
+	/* char **p_mandato = &mandato; */
+
+	/* for(int j = 0; j < sizeof(mandato); ++j)
+	{
+		printf("%c", *(p_mandato+j));
+		if (mandato[0][j] == '\0'){
+			printf("\nEncontrado fin de palabra\n");
+		}
+	} */
+
+
 	/*
 	FILE *df;
 	char linea[MAX];
 	char cpu[MAX];
 	int FIN=0;
+
 
 	if ((df=fopen("/proc/cpuinfo", "r"))==NULL){
 		printf("Error al abrir el fichero");

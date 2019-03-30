@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "prueba"
+clear
 cd ssoo_p2
 make
 ./msh
