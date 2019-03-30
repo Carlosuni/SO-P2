@@ -24,7 +24,8 @@ int mytime(char **mandato);
 int mypwd(char **mandato);
 
 
-int main(void){
+int main(void)
+{
 	char ***argvv;
 	int argvc;
 	//char **argv;
@@ -44,123 +45,138 @@ int main(void){
 	int status;		/* Estado del wait */
 	int outPadre;	/* Redireccionar salida del padre */
 
-	/* Eliminamos los biffer... */
+	/* Limpiamos los buffers... */
 	setbuf(stdout, NULL);	
 	setbuf(stdin, NULL);	
 			
 	/* Hasta el infinito o hasta que apretemos Ctrl + C */
-	while (1){	
-		
+	while (1)
+	{		
 		/* Prompt */
 		fprintf(stderr, "%s", "msh> ");	
 		
 		/* Parseamos la entrada... */
 		ret = obtain_order(&argvv, filev, &bg);
 		
-		/* Tratamiento de las SE�ALES */
-		
-		/* En background las se�ales se ignoras... */
-		if (bg){
+		/* Tratamiento de las SEÑALES */
+		/* En background las señales se ignoran... */
+		if (bg)
+		{
  			signal(SIGINT, SIG_IGN);
 			signal(SIGQUIT, SIG_IGN);
-		}
-		
-		/* En foreground se tiene el comportamiento por defecto... */
-		else{
+		} else
+		{
+			/* En foreground se tiene el comportamiento por defecto... */
 			signal(SIGINT, SIG_DFL);
 			signal(SIGQUIT, SIG_DFL);
 		}			
 		
 		/* EOF */
-		if (ret == 0) 
+		if (ret == 0)
+		{ 
 		  break;		
+		}
 		  		  
 		/* Syntax error */
 		if (ret == -1) 
+		{
 		  continue;	
+		}
 		  
-		/* N�mero de comandos en la entrada */
+		/* Número de comandos en la entrada */
 		argvc = ret - 1;		
 		
-		/* L�nea vac�a */
+		/* Línea vacía */
 		if (argvc == 0) 
+		{
 		  continue;	
+		}
 		  		  
 		/* Comprobamos si tenemos que abrir el fichero de entrada */  
-		if (filev[0]!=NULL){
-			
-			fdIn = open (filev[0], O_RDONLY);			
+		if (filev[0] != NULL)
+		{	
+			fdIn = open(filev[0], O_RDONLY);			
 			
 			/* Si se produce un error al abrir el fichero de entrada */
-			if (fdIn<0){
-				printf ("Error al abrir el fichero de entrada!\n");			
+			if (fdIn < 0)
+			{
+				printf("Error al abrir el fichero de entrada!\n");			
 				continue;
 			}
 		}
 		
 		/* Comprobamos si tenemos que abrir el fichero de salida */  
-		if (filev[1]!=NULL){
-			
-			fdOut = creat (filev[1], 0666);
+		if (filev[1] != NULL)
+		{
+			fdOut = creat(filev[1], 0666);
 			
 			/* Si se produce un error al abrir el fichero de salida */
-			if (fdOut<0){
-				printf ("Error al crear el fichero de salida!\n");			
+			if (fdOut < 0)
+			{
+				printf("Error al crear el fichero de salida!\n");			
 				continue;
 			}
 		}
 		
 		/* Comprobamos si tenemos que abrir el fichero de errores */  
-		if (filev[2]!=NULL){
+		if (filev[2] != NULL)
+		{
 			
-			fdError = creat (filev[2], 0666);
+			fdError = creat(filev[2], 0666);
 			
 			/* Si se produce un error al abrir el fichero de errores */
-			if (fdError<0){
-				printf ("Error al crear el fichero de errores!\n");			
+			if (fdError < 0)
+			{
+				printf("Error al crear el fichero de errores!\n");			
 				continue;
 			}
 		}
 																		
 		/* Creamos tantos procesos como comandos a ejecutar */
-		for (i=0; i<argvc; i++){					
-			
-			/* Creamos el PIPE correspondiente... si procede */					
+		for (i = 0; i < argvc; i++)
+		{						
+			/* Creamos el PIPE correspondiente... si procede */	/* TODO */				
 						
-			/* Si somos un proceso par y quedan m�s procesos por crear */
-			if ((i<(argvc-1)) && (i%2==0)){
-				
-				while (pipe(pipe1)==-1)
+			/* Si somos un proceso par y quedan mas procesos por crear */
+			if ((i < (argvc - 1)) && (i % 2 == 0))
+			{
+				while (pipe(pipe1) == -1)
+				{
 					printf("Error al crear el pipe1\n");
+				}
 			}
 			
-			/* Si somos un proceso impar y quedan m�s procesos por crear */
-			if ((i<(argvc-1)) && (i%2==1)){
+			/* Si somos un proceso impar y quedan mas procesos por crear */
+			if ((i < (argvc - 1)) && (i % 2 == 1))
+			{
 				
-				while (pipe(pipe2)==-1)
+				while (pipe(pipe2) == -1)
+				{
 					printf("Error al crear el pipe2\n");
+				}
 			}								
-
 
 			/* Comprobamos si tenemos que ejecutar un MANDATO INTERNO */
 
-			/* Si es mytime, no es en BG y es el �ltimo */
-			if (((strcmp(argvv[i][0],"mytime")==0)&&(!bg)&&(argvc>1)&&(i==argvc-1)) ||
-					((argvc==1)&&(strcmp(argvv[i][0],"mytime")==0)&&(!bg))){						
-						
+			/* Si es mytime, no es en BG y es el último */
+			if (((strcmp(argvv[i][0], "mytime") == 0) && (!bg) && (argvc > 1) && (i == argvc - 1)) ||
+					((argvc == 1) && (strcmp(argvv[i][0], "mytime") == 0) && (!bg)))
+			{								
 					/* Si hay que direccionar la salida */	
-					if (filev[1]!=NULL){
-						outPadre = dup (STDOUT_FILENO);
-						close (STDOUT_FILENO);
-						dup (fdOut);
-						close (fdOut);						
+					if (filev[1] != NULL)
+					{
+						outPadre = dup(STDOUT_FILENO);
+						close(STDOUT_FILENO);
+						dup(fdOut);
+						close(fdOut);						
 					}
 
 					/* Ejecutamos... */
 					mytime(argvv[i]);
 
 					/* Dejamos la salida como antes... */
-					if (filev[1]!= NULL){
+					if (filev[1] != NULL)
+					{
 						close(STDOUT_FILENO);
 						dup(outPadre);
 					}
@@ -168,215 +184,196 @@ int main(void){
 					continue;
 			}
 
-
 		   /* Si es mypwd, no es en BG y es el �ltimo */
-			if (((strcmp(argvv[i][0],"mypwd")==0)&&(!bg)&&(argvc>1)&&(i==argvc-1)) ||
-					((argvc==1)&&(strcmp(argvv[i][0],"mypwd")==0)&&(!bg))){						
-						
+			if (((strcmp(argvv[i][0], "mypwd") == 0) && (!bg) && (argvc > 1) && (i == argvc - 1)) ||
+					((argvc == 1) && (strcmp(argvv[i][0], "mypwd") == 0) && (!bg)))
+			{								
 					/* Si hay que direccionar la salida */	
-					if (filev[1]!=NULL){
-						outPadre = dup (STDOUT_FILENO);
-						close (STDOUT_FILENO);
-						dup (fdOut);
-						close (fdOut);						
+					if (filev[1] != NULL)
+					{
+						outPadre = dup(STDOUT_FILENO);
+						close(STDOUT_FILENO);
+						dup(fdOut);
+						close(fdOut);						
 					}
 
 					/* Ejecutamos... */
 					mypwd(argvv[i]);
 
 					/* Dejamos la salida como antes... */
-					if (filev[1]!= NULL){
+					if (filev[1] != NULL)
+					{
 						close(STDOUT_FILENO);
 						dup(outPadre);
 					}
 					
 					continue;
 			}
-			
-						
+								
 			/* Creamos un nuevo proceso... */
 			pid = fork();
 						
 			/* Error al crear proceso hijo */
-			if (pid==-1){
+			if (pid == -1)
+			{
 				printf ("Error al crear proceso hijo!\n");
 				break;
-			}
-			
-			/* Si soy el proceso hijo */			
-			else if (pid==0){
+			} else if (pid == 0)
+			{
+				/* Si soy el proceso hijo */			
 				
 				/* PRIMER MANDATO */
-				if (i==0){
-					
+				if (i == 0)
+				{			
 					/* Tiene que leer del fichero de entrada */
-					if (filev[0]!=NULL){
-						close (STDIN_FILENO);	// Cerramos IN est�ndar
-						dup (fdIn);				// Fichero -> IN est�ndar
-						close (fdIn);			// Cerramos fichero
+					if (filev[0] != NULL)
+					{
+						close(STDIN_FILENO);	// Cerramos IN est�ndar
+						dup(fdIn);				// Fichero -> IN est�ndar
+						close(fdIn);			// Cerramos fichero
 					}					
 					
 					/* Si es el �nico mandato */
-					if (argvc==1){
-						
+					if (argvc == 1)
+					{
 						/* Tiene que leer del fichero de salida */
-						if (filev[1]!=NULL){					
-							close (STDOUT_FILENO);
-							dup (fdOut);
-							close (fdOut);							
+						if (filev[1] != NULL)
+						{					
+							close(STDOUT_FILENO);
+							dup(fdOut);
+							close(fdOut);							
 						}
 						
 						/* Tiene que leer del fichero de error */
-						if (filev[2]!=NULL){
-							close (STDERR_FILENO);
-							dup (fdError);
-							close (fdError);							
+						if (filev[2] != NULL)
+						{
+							close(STDERR_FILENO);
+							dup(fdError);
+							close(fdError);							
 						}
+					} else if (argvc > 1)
+					{
+						/* Al menos hay 2 mandatos, redireccionamos pipes ... */
+						close(STDOUT_FILENO);	// Cerramos OUT est�ndar
+						close(pipe1[0]);		// Cerramos pipe1[RD]
+						dup(pipe1[1]);			// pipe1[WR] -> OUT est�ndar
+						close(pipe1[1]);		// Cerramos pipe1[WR]						
 					}
-					
-					/* Al menos hay 2 mandatos, redireccionamos pipes ... */
-					else if (argvc>1){
-						close (STDOUT_FILENO);	// Cerramos OUT est�ndar
-						close (pipe1[0]);		// Cerramos pipe1[RD]
-						dup (pipe1[1]);			// pipe1[WR] -> OUT est�ndar
-						close (pipe1[1]);		// Cerramos pipe1[WR]						
-					}
-					
-				} /* Primer mandato */	
-														
-				
-				/* �LTIMO MANDATO */
-				else if ((i==(argvc-1)) && (i!=0)){
-					
+					/* Primer mandato */	
+				} else if ((i == (argvc - 1)) && (i != 0))
+				{
+					/* ÚLTIMO MANDATO */
 					/* Tiene que leer del fichero de salida */
-					if (filev[1]!=NULL){					
-						close (STDOUT_FILENO);
-						dup (fdOut);
-						close (fdOut);							
+					if (filev[1] != NULL)
+					{					
+						close(STDOUT_FILENO);
+						dup(fdOut);
+						close(fdOut);							
 					}
 					
 					/* Tiene que leer del fichero de error */
-					if (filev[2]!=NULL){					
-						close (STDERR_FILENO);
-						dup (fdError);
-						close (fdError);							
+					if (filev[2] != NULL)
+					{					
+						close(STDERR_FILENO);
+						dup(fdError);
+						close(fdError);							
 					}					
 					
 					/* Comprobamos si hay que redireccionar pipes */
-					
 					/* Si somos un proceso impar*/
-					if (i%2==1){
-						close (STDIN_FILENO);	// Cerramos IN est�ndar
-						close (pipe1[1]);		// Cerramos pipe2[WR]
-						dup (pipe1[0]);			// pipe2[RD] -> IN est�ndar
-						close (pipe1[0]);		// Cerramos pipe2[RD]
-					}
-										
-					/* Si somos un proceso par */
-					else{
-						close (STDIN_FILENO);	// Cerramos IN est�ndar
-						close (pipe2[1]);		// Cerramos pipe1[WR]
-						dup (pipe2[0]);			// pipe1[RD] -> IN est�ndar
-						close (pipe2[0]);		// Cerramos pipe1[RD]
+					if (i%2 == 1)
+					{
+						close(STDIN_FILENO);	// Cerramos IN est�ndar
+						close(pipe1[1]);		// Cerramos pipe2[WR]
+						dup(pipe1[0]);			// pipe2[RD] -> IN est�ndar
+						close(pipe1[0]);		// Cerramos pipe2[RD]
+					} else
+					{
+						/* Si somos un proceso par */
+						close(STDIN_FILENO);	// Cerramos IN est�ndar
+						close(pipe2[1]);		// Cerramos pipe1[WR]
+						dup(pipe2[0]);			// pipe1[RD] -> IN est�ndar
+						close(pipe2[0]);		// Cerramos pipe1[RD]
 					}				
-					
-				} /* �ltimo mandato */				
-				
-				
-								
-				/* MANDATO INTERMEDIO */
-				else{
-					
+					/* Último mandato */
+				} else
+				{
+					/* MANDATO INTERMEDIO */
 					/* Es un mandato par */
-					if (i%2==0){
-						
+					if (i%2 == 0)
+					{
 						/* Redireccionamos la salida del pipe 1 */
-						close (STDIN_FILENO);	// Cerramos IN est�ndar
-						close (pipe2[1]);		// Cerramos pipe1[WR]
-						dup (pipe2[0]);			// pipe1[RD] -> IN est�ndar
-						close (pipe2[0]);		// Cerramos pipe1[RD]
+						close(STDIN_FILENO);	// Cerramos IN est�ndar
+						close(pipe2[1]);		// Cerramos pipe1[WR]
+						dup(pipe2[0]);			// pipe1[RD] -> IN est�ndar
+						close(pipe2[0]);		// Cerramos pipe1[RD]
 						
 						/* Redireccionamos la salida del pipe 2 */
-						close (STDOUT_FILENO);	// Cerramos OUT est�ndar
-						close (pipe1[0]);		// Cerramos pipe2[RD]
-						dup (pipe1[1]);			// pipe2[WR] -> OUT est�ndar
-						close (pipe1[1]);		// Cerramos pipe2[WR]						
-					}
-					
-					
-					/* Es un mandato impar*/
-					else{
-												
+						close(STDOUT_FILENO);	// Cerramos OUT est�ndar
+						close(pipe1[0]);		// Cerramos pipe2[RD]
+						dup(pipe1[1]);			// pipe2[WR] -> OUT est�ndar
+						close(pipe1[1]);		// Cerramos pipe2[WR]	
+						/* Es un mandato impar*/					
+					}else
+					{									
 						/* Redireccionamos la salida del pipe 1 */
-						close (STDIN_FILENO);	// Cerramos IN est�ndar
-						close (pipe1[1]);		// Cerramos pipe1[WR]
-						dup (pipe1[0]);			// pipe1[RD] -> IN est�ndar
-						close (pipe1[0]);		// Cerramos pipe1[RD]
+						close(STDIN_FILENO);	// Cerramos IN est�ndar
+						close(pipe1[1]);		// Cerramos pipe1[WR]
+						dup(pipe1[0]);			// pipe1[RD] -> IN est�ndar
+						close(pipe1[0]);		// Cerramos pipe1[RD]
 						
 						/* Redireccionamos la salida del pipe 2 */
-						close (STDOUT_FILENO);	// Cerramos OUT est�ndar
-						close (pipe2[0]);		// Cerramos pipe2[RD]
-						dup (pipe2[1]);			// pipe2[WR] -> OUT est�ndar
-						close (pipe2[1]);		// Cerramos pipe2[WR]						
-					}					
-					
+						close(STDOUT_FILENO);	// Cerramos OUT est�ndar
+						close(pipe2[0]);		// Cerramos pipe2[RD]
+						dup(pipe2[1]);			// pipe2[WR] -> OUT est�ndar
+						close(pipe2[1]);		// Cerramos pipe2[WR]						
+					}						
 				} /* Mandato intermedio */
-								
-				
+									
 				/* Ejecutamos el comando */
-				if ((strcmp(argvv[i][0],"mytime")==0)){
+				if ((strcmp(argvv[i][0], "mytime") == 0))
+				{
 					mytime(argvv[i]);
 					exit(0);
+				} else if ((strcmp(argvv[i][0], "mypwd") == 0))
+				{
+					mypwd(argvv[i]);
+					exit(0);
+		  		} else 
+				{							
+	 				execvp(argvv[i][0], argvv[i]);						
 				}
-
-				else 
-				  if ((strcmp(argvv[i][0],"mypwd")==0)){
-						mypwd(argvv[i]);
-						exit(0);
-		  		  }
-
-				else							
-	 				execvp (argvv[i][0], argvv[i]);						
-				
-			} /* Soy proceso hijo */
-			
-			
-			
-			/* Si soy el padre... */
-			else{
-				
+			/* Soy proceso hijo */	
+			} else
+			{
+				/* Si soy el padre... */
 				/* Se cierran los pipes correspondientes... */
-				if ((i%2==0) && (i!=0)){
-					close (pipe2[0]);
-					close (pipe2[1]);
+				if ((i%2 == 0) && (i != 0))
+				{
+					close(pipe2[0]);
+					close(pipe2[1]);
+				} else if (i % 2 == 1)
+				{
+					close(pipe1[0]);
+					close(pipe1[1]);
 				}			
-				
-				else if (i%2==1){
-					close (pipe1[0]);
-					close (pipe1[1]);
-				}			
-				
-				
+						
 				/* Hay que ejecutar en background... */
 				if (bg)
+				{
   				  printf("[%d]\n", pid);
-				
-				/* Esperamos a que el �ltimo mandato termine... */
-				else{
-					if (i==(argvc-1)){
-						while (pid!=wait(&status)) 
-						  continue;
+				  /* Esperamos a que el �ltimo mandato termine... */
+				} else if (i == (argvc - 1))
+				{
+					while (pid != wait(&status)) 
+					{
+						continue;
 					}
-				}				
-					
+				}			
 			} /* Soy proceso padre */
-			
 						
-} /* For i=0 to numMandatos */
-		
-	
-		
-		
+		} /* For i=0 to numMandatos */
+			
 /*
  * LAS LINEAS QUE A CONTINUACION SE PRESENTAN SON SOLO
  * PARA DAR UNA IDEA DE COMO UTILIZAR LAS ESTRUCTURAS
@@ -395,15 +392,14 @@ int main(void){
 /*
  * FIN DE LA PARTE A ELIMINAR
  */
+	
 	}
-
-
 	exit(0);
 	return 0;
 }
 
-int mytime(char **mandato){
-	
+int mytime(char **mandato)
+{	
 	/*
 	FILE *df;
 	char linea[MAX];
@@ -466,16 +462,13 @@ int mytime(char **mandato){
 	else{
 		printf ("Par�metro incorrecto -> %s\n", mandato[1]);
 	}
-
 */
-	return 0;
 
-	
+	return 0;
 }
 
 int mypwd(char **mandato)
 {
-
 	/*
 	int numMin, numMax;
 	int i;
@@ -499,5 +492,6 @@ int mypwd(char **mandato)
 	for (i=numMin;i<=numMax;i++)	
 		kill(i, SIGSTOP);
 	*/
+
 	return 0;
 }
