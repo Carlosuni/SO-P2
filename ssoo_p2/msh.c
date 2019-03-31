@@ -19,6 +19,7 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <time.h> 
 
 
 extern int obtain_order();		/* See parser.y for description */
@@ -454,7 +455,7 @@ int mytime(char **mandato)
 	//char **flags[mandato.]
 	//printf("\n%lu\n", n_palabras);
 	
-	printf("Tamaño mandato = %lu\n", sizeof(mandato));
+	//printf("Tamaño mandato = %lu\n", sizeof(mandato));
 
 	int n_palabras = 0;
 	//char *comando = NULL;
@@ -481,13 +482,13 @@ int mytime(char **mandato)
 
 		argumentos[j - 1] = palabra;
 		//strcpy(flags[j - 2], mandato[j]);
-		printf("Guardando '%s' como argumento\n", argumentos[j - 1]);
+		//printf("Guardando '%s' como argumento\n", argumentos[j - 1]);
 
 		/* Si es NULL, deja de contar y almacenar las palabras del mandato */
 		if (palabra == NULL)
 		{
-			printf("Numero de palabras = %d\n", n_palabras);
-			printf("FIN DE MANDATO\n");
+			//printf("Numero de palabras = %d\n", n_palabras);
+			//printf("FIN DE MANDATO\n");
 			break;
 		} 
 
@@ -496,36 +497,42 @@ int mytime(char **mandato)
 		++n_palabras;	
 	}
 
+	struct timeval tv_inicio, tv_fin;
+	gettimeofday(&tv_inicio, NULL);
+	double t_inicio = tv_inicio.tv_usec;
+	//printf("tiempo inicio = %f\n", t_inicio);
+
+	//clock_t t; 
+    //t = clock(); 
+
 	/* Creamos un nuevo proceso... */
 	int pid = fork(); 
 	int status;
+	int tpid = 0;
 
-	switch(pid) {
+
+	switch(pid)
+	{
 		case -1: /* error */
 			perror("Error en el fork");
 			return -1;
 
 		case 0: /* hijo */
-			struct timeval tv;
-			gettimeofday(&tv, NULL);
-			double t_inicio = tv.tv_sec;
-
-			if (execvp(argumentos[0], argumentos) < 0) {
+			//sleep(2);
+			if (execvp(argumentos[0], argumentos) < 0)
+			{
 				int errnum = errno;
-				fprintf(stderr, "Error opening file: %s\n", strerror( errnum ));
+				fprintf(stderr, "Error opening file: %s\n", strerror(errnum));
 				//printf("Error en el exec. Si todo ha ido bien esto nunca debería ejecutarse.\nError: %s\n", strerror(errno)); 
 				return -1;
 			}
-
-			gettimeofday(&tv, NULL);
-			double t_fin = tv.tv_sec;
-			double t_ejec = t_fin - t_inicio;
-			printf("“​Time spent: %f secs.\n​", t_ejec);
 			break;
 
 		default: /* padre */
-			printf("Soy el proceso padre\n");
-			while (wait(&status) != pid){
+			//printf("Soy el proceso padre\n");
+/* 			while (wait(&status) != pid)
+			{
+				printf("“​Time spent: secs.\n​");
 				if (status == 0)
 				{
 					printf("Ejecución normal del hijo\n");
@@ -537,6 +544,38 @@ int mytime(char **mandato)
 					return -1;
 				}
 			}
+			if (wait(&status) == pid)
+			{
+				gettimeofday(&tv_fin, NULL);
+				double t_fin = tv_fin.tv_usec;
+				double t_ejec = t_fin - t_inicio;
+				printf("“​Time spent: %f secs.\n​", t_ejec);
+			} */
+			do {
+       			tpid = wait(&status);
+				if(tpid == -1)
+				{
+					//printf("Ejecución anormal del hijo \n");
+					//perror("Error en el wait");
+					//printf("Fin del proceso PADRE\n");
+					printf("Usage: mytime <command <args>>");
+					return -1;	
+				} else if(tpid == pid)
+				{
+					gettimeofday(&tv_fin, NULL);
+					double t_fin = tv_fin.tv_usec;
+					//printf("tiempo final = %f\n", t_fin);
+					double t_ejec = t_fin - t_inicio;
+					printf("​Time spent: %f secs.\n​", ((t_ejec / 1000) + 0.5));  
+
+					//t = clock() - t; 
+		  			//double time_taken = ((double)t)/CLOCKS_PER_SEC; // in seconds 
+					//printf("fun() took %f seconds to execute \n", time_taken); 
+
+					break;
+				}   		
+			} while(tpid != pid);
+
 	}
 			
 
@@ -627,29 +666,48 @@ int mytime(char **mandato)
 
 int mypwd(char **mandato)
 {
-	/*
-	int numMin, numMax;
-	int i;
 
-	// Validar cmd 
-	if ((mandato[1]==NULL)||(mandato[2]==NULL)){
-		printf("Usage: stop minPid maxPid");
-		return(-1);
+	int n_palabras = 0;
+	//char *comando = NULL;
+	//char *flags[6];
+
+	int mandato_size = sizeof(mandato);
+
+	/* Recorremos todas las palabras del mandato */
+	for (int j = 0; j < mandato_size; ++j)
+	{
+		//printf("Palabra del mandato = %s\n", mandato[j]);
+		char *palabra = mandato[j];
+		//strcpy(flags[j - 2], mandato[j]);
+		//printf("Guardando '%s' como argumento\n", argumentos[j - 1]);
+
+		/* Si es NULL, deja de contar y almacenar las palabras del mandato */
+		if (palabra == NULL)
+		{
+			//printf("Numero de palabras = %d\n", n_palabras);
+			//printf("FIN DE MANDATO\n");
+			break;
+		} else if (j > 0)
+		{
+			perror("Mypwd error\n");
+			return -1;
+		}
+
+		++n_palabras;	
+	}
+
+
+	/* FALLA EN EL CORRECTOR INESPERADAMENTE
+		DALA SALIDA ESPERADA*/
+	char cwd[256];
+	if (getcwd(cwd, sizeof(cwd)) == NULL)
+	{
+      	perror("getcwd() error");
+	  	return -1;
+	} else {
+     	printf("Current dir: %s\n", cwd);
 	}
 	
-	numMin=atoi(mandato[1]);
-	numMax=atoi(mandato[2]);
-
-	
-	// Envio SIGKILL a un proceso 
-	if (numMin>numMax){
-		printf("Error, no existe el proceso\n");
-		exit(0);
-	}
-										               
-	for (i=numMin;i<=numMax;i++)	
-		kill(i, SIGSTOP);
-	*/
 
 	return 0;
 }
